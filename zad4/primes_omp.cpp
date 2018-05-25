@@ -20,9 +20,10 @@ int main( int argc, char** argv )
         << "file - path to file with numbers" << endl;
         return 1;
     }
-    clock_t begin_t, end_t;
+    struct timespec start, finish;
+    double elapsed;
     ifstream file;
-    int num_threads = atoi(argv[1]);
+    int n_thr = atoi(argv[1]);
     vector<unsigned long> numbers;
     vector<bool> result;
     long tmp,a,j,p;
@@ -44,31 +45,37 @@ int main( int argc, char** argv )
     //Setting size of result list equal to size of number list
     result.resize(numbers.size());
     //Start of prime test
-    begin_t = clock();
-    #pragma omp parallel for default(none) shared(numbers,cout,result) private(p,j,prime,a)
-    for (int i = 0; i < numbers.size(); i++)
+    clock_gettime(CLOCK_MONOTONIC, &start);
+    #pragma omp parallel num_threads(n_thr) default(none) shared(numbers,cout,result) private(p,j,prime,a)
     {
-        p = numbers.at(i);       
-        j = 0;
-        prime = true;
-        /*end when p is not prime (a^(p-1) mod p != 1)
-        or test passed PRECISION times*/
-        while(prime && j < PRECISION)
+        #pragma omp for schedule(dynamic)
+        for (int i = 0; i < numbers.size(); i++)
         {
-            a = (rand() % (p-1)) + 1;
-            if(power_modulo_fast(a, p-1, p) == 1)
+            p = numbers.at(i);       
+            j = 0;
+            prime = true;
+            /*end when p is not prime (a^(p-1) mod p != 1)
+            or test passed PRECISION times*/
+            while(prime && j < PRECISION)
             {
-                j++;
+                a = (rand() % (p-1)) + 1;
+                if(power_modulo_fast(a, p-1, p) == 1)
+                {
+                    j++;
+                }
+                else
+                {
+                    prime = false;
+                }
             }
-            else
-            {
-                prime = false;
-            }
+            result.at(i)=prime;
         }
-        result.at(i)=prime;
     }
-    end_t = clock();
-    cout<< "Time: " << end_t - begin_t / (double)(CLOCKS_PER_SEC / 1000) << "ms" << std::endl;
+    
+    clock_gettime(CLOCK_MONOTONIC, &finish);
+    elapsed = (finish.tv_sec - start.tv_sec);
+    elapsed += (finish.tv_nsec - start.tv_nsec) / 1000000000.0;
+    cout<< "Time: " << elapsed * 1000 << "ms" << std::endl;
     //Print the result
     for (int i = 0; i < numbers.size(); i++)
     {
