@@ -20,6 +20,17 @@ class TestKMP(unittest.TestCase):
     result = kmp.build_partial_match_table(pattern)
     self.assertListEqual(list(result), pm_table)
 
+  def test_get_number_of_occurrence(self):
+    pattern = "lo"
+    filepath = "./test1"
+    result = kmp.get_number_of_occurrence(pattern, filepath)
+    self.assertEqual(result, 2)
+
+    pattern = "tempor fermentum"
+    filepath = "./test2"
+    result = kmp.get_number_of_occurrence(pattern, filepath)
+    self.assertEqual(result, 1)
+
 
 if __name__ == '__main__':
   unittest.main()
