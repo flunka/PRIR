@@ -36,6 +36,29 @@ class TestKMP(unittest.TestCase):
         # result = kmp.get_number_of_occurrence(pattern, filepath)
         # self.assertEqual(result, 3200000)
 
+    def test_build_patterns(self):
+        expression = "abc"
+        patterns = ["abc"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
+        expression = "a[bc]d"
+        patterns = ["abd", "acd"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
+        expression = "[ab]c[def]"
+        patterns = ["acd", "bcd", "ace", "bce", "acf", "bcf"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
+        expression = "]abcdef"
+        with self.assertRaises(ValueError):
+            list(kmp.build_patterns(expression))
+
 
 if __name__ == '__main__':
     unittest.main()
