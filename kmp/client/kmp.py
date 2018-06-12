@@ -110,12 +110,41 @@ def do_KMP(text, pattern, pm_table):
   return (result_counter.item(0), result)
 
 
+def build_patterns(expression):
+  patterns = [""]
+  index = 0
+  while (index < len(expression)):
+    if(expression[index].isalpha()):
+      for i in range(0, len(patterns)):
+        patterns[i] += expression[index]
+      index += 1
+    elif (expression[index] == "["):
+      index += 1
+      old_patterns = patterns[:]
+      first = True
+      while (expression[index] != "]"):
+        if (index + 1 >= len(expression) or expression[index].isalpha() == False):
+          raise ValueError('Invalid regex!!!')
+        if (first):
+          first = False
+          for i in range(0, len(patterns)):
+            patterns[i] += expression[index]
+        else:
+          for i in range(0, len(old_patterns)):
+            patterns.append(old_patterns[i] + expression[index])
+        index += 1
+      index += 1
+    else:
+      raise ValueError('Invalid regex!!!')
+  for pattern in patterns:
+    yield pattern
+
+
 def get_number_of_occurrence(pattern, filepath):
   return find_pattern(pattern, filepath)
 
 
 def find_pattern(pattern, filepath, print_result=False):
-
   text = array("u", "")
   pm_table = build_partial_match_table(pattern)
   part = 0
@@ -149,13 +178,19 @@ def find_pattern(pattern, filepath, print_result=False):
   return number_of_occurrence
 
 
-if __name__ == '__main__':
+def main():
   parser = argparse.ArgumentParser(description='KMP string matching algorithm on GPU')
   parser.add_argument('filepath')
   parser.add_argument('pattern')
   parser.add_argument('-n', dest='n', action='store_false', help='print only number of occurrence')
   args = parser.parse_args(sys.argv[1:])
   np.set_printoptions(threshold=np.inf)
-  result = find_pattern(args.pattern, args.filepath, args.n)
-  if (args.n == False):
-    print(result)
+  for pattern in build_patterns(args.pattern):
+    print("Results for pattern: {}".format(pattern))
+    result = find_pattern(pattern, args.filepath, args.n)
+    if (args.n == False):
+      print(result)
+
+
+if __name__ == '__main__':
+  main()
