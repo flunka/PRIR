@@ -59,6 +59,18 @@ class TestKMP(unittest.TestCase):
         with self.assertRaises(ValueError):
             list(kmp.build_patterns(expression))
 
+        expression = "\\d"
+        patterns = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
+        expression = "[ab]\\d"
+        patterns = ["a0", "b0", "a1", "b1", "a2", "b2", "a3", "b3", "a4", "b4", "a5", "b5", "a6", "b6", "a7", "b7", "a8", "b8", "a9", "b9"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
 
 if __name__ == '__main__':
     unittest.main()
