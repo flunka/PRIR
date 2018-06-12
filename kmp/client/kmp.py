@@ -2,6 +2,8 @@ import pycuda.autoinit
 import pycuda.driver as cuda
 import numpy as np
 import time
+import sys
+import argparse
 from array import array
 from pycuda.compiler import SourceModule
 
@@ -16,12 +18,12 @@ THREADS = 128
 # 16777216   == 16 MB
 # 33554432   == 32 MB
 # 67108864   == 64 MB
-# 134217728  == 128MB max size on my gpu 
+# 134217728  == 128MB max size on my gpu
 # 268435456  == 256MB out of memeory
 # 536870912  == 512MB
 # 1073741824 == 1  GB
 
-MAX_SIZE = 134217728
+MAX_SIZE = 13421772
 
 mod = SourceModule("""
 __global__ void KMP(unsigned int* pattern, unsigned int* target,int f[],int c[],int* n, int* m,int* result_counter)
@@ -51,8 +53,7 @@ __global__ void KMP(unsigned int* pattern, unsigned int* target,int f[],int c[],
           if (k == n[0])
           {
 
-              c[i - n[0]] = i-n[0];
-              atomicAdd(result_counter, 1);
+              c[atomicAdd(result_counter, 1)] = i-n[0];
               i = i - k + 1;
               k = 0;
           }
@@ -100,16 +101,20 @@ def do_KMP(text, pattern, pm_table):
   m = np.array(m, dtype=np.int32)
 
   start.record()
-  KMP(cuda.In(pattern), cuda.In(text), cuda.In(pm_table), cuda.Out(result), cuda.In(n), cuda.In(m), cuda.InOut(result_counter), block=block, grid=grid)
+  KMP(cuda.In(pattern), cuda.In(text), cuda.In(pm_table), cuda.InOut(result), cuda.In(n), cuda.In(m), cuda.InOut(result_counter), block=block, grid=grid)
   end.record()
   end.synchronize()
 
   # print("Time: {}ms".format(start.time_till(end)))
 
-  return (result, result_counter.item(0))
+  return (result_counter.item(0), result)
 
 
 def get_number_of_occurrence(pattern, filepath):
+  return find_pattern(pattern, filepath)
+
+
+def find_pattern(pattern, filepath, print_result=False):
 
   text = array("u", "")
   pm_table = build_partial_match_table(pattern)
@@ -118,23 +123,39 @@ def get_number_of_occurrence(pattern, filepath):
   pattern = list(pattern)
   pattern = np.array(pattern)
 
-  result = 0
+  number_of_occurrence = 0
 
   with open(filepath) as f:
     for line in f:
       text += array("u", line)
       if(len(text) > MAX_SIZE):
         # print("Part {}:".format(part))
-        result += do_KMP(text, pattern, pm_table)[1]
+        result = do_KMP(text, pattern, pm_table)
+        number_of_occurrence += result[0]
+        if(print_result):
+          print(result[0])
+          print(result[1][0:result[0]])
         text = array("u", "")
         part += 1
 
   if len(text) > 0:
     # print("Part {}:".format(part))
-    result += do_KMP(text, pattern, pm_table)[1]
+    result = do_KMP(text, pattern, pm_table)
+    number_of_occurrence += result[0]
+    if(print_result):
+      print(result[0])
+      print(result[1][0:result[0]])
 
-  return result
+  return number_of_occurrence
 
 
 if __name__ == '__main__':
-  pass
+  parser = argparse.ArgumentParser(description='KMP string matching algorithm on GPU')
+  parser.add_argument('filepath')
+  parser.add_argument('pattern')
+  parser.add_argument('-n', dest='n', action='store_false', help='print only number of occurrence')
+  args = parser.parse_args(sys.argv[1:])
+  np.set_printoptions(threshold=np.inf)
+  result = find_pattern(args.pattern, args.filepath, args.n)
+  if (args.n == False):
+    print(result)
