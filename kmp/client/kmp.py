@@ -23,7 +23,7 @@ THREADS = 128
 # 536870912  == 512MB
 # 1073741824 == 1  GB
 
-MAX_SIZE = 13421772
+MAX_SIZE = 134217728
 
 mod = SourceModule("""
 __global__ void KMP(unsigned int* pattern, unsigned int* target,int f[],int c[],int* n, int* m,int* result_counter)
@@ -99,7 +99,6 @@ def do_KMP(text, pattern, pm_table):
 
   m = text.size
   m = np.array(m, dtype=np.int32)
-
   start.record()
   KMP(cuda.In(pattern), cuda.In(text), cuda.In(pm_table), cuda.InOut(result), cuda.In(n), cuda.In(m), cuda.InOut(result_counter), block=block, grid=grid)
   end.record()
@@ -134,6 +133,18 @@ def build_patterns(expression):
             patterns.append(old_patterns[i] + expression[index])
         index += 1
       index += 1
+    elif (expression[index] == "\\"):
+      index += 1
+      if (expression[index] == "d"):
+        index += 1
+        old_patterns = patterns[:]
+        for x in range(0, 10):
+          if (x == 0):
+            for i in range(0, len(patterns)):
+              patterns[i] += str(x)
+          else:
+            for i in range(0, len(old_patterns)):
+              patterns.append(old_patterns[i] + str(x))
     else:
       raise ValueError('Invalid regex!!!')
   for pattern in patterns:
