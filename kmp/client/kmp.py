@@ -172,7 +172,7 @@ def find_pattern(pattern, filepath, print_result=False):
         number_of_occurrence += result[0]
         if(print_result):
           print(result[0])
-          print(result[1][0:result[0]])
+          print(' '.join(map(str, result[1][0:result[0]])))
         text = array("B", "".encode())
         part += 1
 
@@ -182,7 +182,7 @@ def find_pattern(pattern, filepath, print_result=False):
     number_of_occurrence += result[0]
     if(print_result):
       print(result[0])
-      print(result[1][0:result[0]])
+      print(' '.join(map(str, result[1][0:result[0]])))
 
   return number_of_occurrence
 
@@ -195,7 +195,6 @@ def main():
   args = parser.parse_args(sys.argv[1:])
   np.set_printoptions(threshold=np.inf)
   for pattern in build_patterns(args.pattern):
-    print("Results for pattern: {}".format(pattern))
     result = find_pattern(pattern, args.filepath, args.n)
     if (args.n == False):
       print(result)
