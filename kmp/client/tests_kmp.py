@@ -55,7 +55,17 @@ class TestKMP(unittest.TestCase):
         for pattern in patterns:
             self.assertEqual(next(result), pattern)
 
-        expression = "]abcdef"
+        expression = "Hello World!?.()#$% ^\n&*"
+        patterns = ["Hello World!?.()#$% ^\n&*"]
+        result = kmp.build_patterns(expression)
+        for pattern in patterns:
+            self.assertEqual(next(result), pattern)
+
+        expression = "]abc[def"
+        with self.assertRaises(ValueError):
+            list(kmp.build_patterns(expression))
+
+        expression = "[abc\\d]def"
         with self.assertRaises(ValueError):
             list(kmp.build_patterns(expression))
 
