@@ -18,15 +18,15 @@ THREADS = 128
 # 16777216   == 16 MB
 # 33554432   == 32 MB
 # 67108864   == 64 MB
-# 134217728  == 128MB max size on my gpu
-# 268435456  == 256MB out of memeory
-# 536870912  == 512MB
+# 134217728  == 128MB
+# 268435456  == 256MB max size on my gpu
+# 536870912  == 512MB out of memeory
 # 1073741824 == 1  GB
 
-MAX_SIZE = 134217728
+MAX_SIZE = 268435456
 
 mod = SourceModule("""
-__global__ void KMP(unsigned int* pattern, unsigned int* target,int f[],int c[],int* n, int* m,int* result_counter)
+__global__ void KMP(unsigned char* pattern, unsigned char* target,int f[],int c[],int* n, int* m,int* result_counter)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     int i = n[0] * index;
@@ -156,18 +156,18 @@ def get_number_of_occurrence(pattern, filepath):
 
 
 def find_pattern(pattern, filepath, print_result=False):
-  text = array("u", "")
+  text = array("B", "".encode())
   pm_table = build_partial_match_table(pattern)
   part = 0
 
-  pattern = list(pattern)
+  pattern = array("B", pattern.encode())
   pattern = np.array(pattern)
 
   number_of_occurrence = 0
 
   with open(filepath) as f:
     for line in f:
-      text += array("u", line)
+      text += array("B", line.encode())
       if(len(text) > MAX_SIZE):
         # print("Part {}:".format(part))
         result = do_KMP(text, pattern, pm_table)
@@ -175,7 +175,7 @@ def find_pattern(pattern, filepath, print_result=False):
         if(print_result):
           print(result[0])
           print(result[1][0:result[0]])
-        text = array("u", "")
+        text = array("B", "".encode())
         part += 1
 
   if len(text) > 0:
