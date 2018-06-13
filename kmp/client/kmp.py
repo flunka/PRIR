@@ -113,11 +113,7 @@ def build_patterns(expression):
   patterns = [""]
   index = 0
   while (index < len(expression)):
-    if(expression[index].isalpha()):
-      for i in range(0, len(patterns)):
-        patterns[i] += expression[index]
-      index += 1
-    elif (expression[index] == "["):
+    if (expression[index] == "["):
       index += 1
       old_patterns = patterns[:]
       first = True
@@ -146,7 +142,9 @@ def build_patterns(expression):
             for i in range(0, len(old_patterns)):
               patterns.append(old_patterns[i] + str(x))
     else:
-      raise ValueError('Invalid regex!!!')
+      for i in range(0, len(patterns)):
+        patterns[i] += expression[index]
+      index += 1
   for pattern in patterns:
     yield pattern
 
