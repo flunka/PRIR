@@ -71,14 +71,16 @@ __global__ void KMP(unsigned char* pattern, unsigned char* target,int f[],int c[
 def build_partial_match_table(pattern):
   pm_table = np.zeros(len(pattern), dtype=np.int32)
   pm_table[0] = -1
+  k = 0
   for i in range(1, pm_table.size):
-    k = pm_table[i - 1]
-    while k >= 0:
-      if pattern[k] == pattern[i - 1]:
-        break
-      else:
-        k = pm_table[k]
-    pm_table[i] = k + 1
+    if (pattern[i] == pattern[k]):
+      pm_table[i] = pm_table[k]
+    else:
+      pm_table[i] = k
+      k = pm_table[k]
+    while (k >= 0 and pattern[i] != pattern[k]):
+      k = pm_table[k]
+    k += 1
   return pm_table
 
 
