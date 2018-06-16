@@ -26,7 +26,7 @@ THREADS = 128
 MAX_SIZE = 268435456
 
 mod = SourceModule("""
-__global__ void KMP(unsigned char* pattern, unsigned char* target,int f[],int c[],int* n, int* m,int* result_counter)
+__global__ void KMP(unsigned char* pattern, unsigned char* target,int f[], unsigned char *c,int* n, int* m,int* result_counter)
 {
     int index = blockIdx.x*blockDim.x + threadIdx.x;
     int i = n[0] * index;
@@ -38,6 +38,7 @@ __global__ void KMP(unsigned char* pattern, unsigned char* target,int f[],int c[
     int k = 0;
     while (i < j)
     {
+        c[i*2+1]=target[i];
         if (k == -1)
         {
             i++;
@@ -45,15 +46,15 @@ __global__ void KMP(unsigned char* pattern, unsigned char* target,int f[],int c[
 
         }
         else if (target[i] == pattern[k])
-        {
-          if(i==1){
-          }
+        {          
           i++;
           k++;
           if (k == n[0])
           {
-
-              c[atomicAdd(result_counter, 1)] = i-n[0];
+              atomicAdd(result_counter, 1);
+              //c[atomicAdd(result_counter, 1)] = i-n[0];
+              c[i*2]='*';
+              c[(i-n[0])*2]='*';
               i = i - k + 1;
               k = 0;
           }
@@ -89,8 +90,8 @@ def do_KMP(text, pattern, pm_table):
   end = cuda.Event()
   KMP = mod.get_function("KMP")
   text = np.array(text)
-  result = np.zeros_like(text, dtype=np.int32)
-  result[:] = -1
+  result = np.zeros(text.size * 2 + 1, dtype=np.uint8)
+  result[:] = 35  # 35 == #
   result_counter = np.array(0, dtype=np.int32)
 
   block = (THREADS, 1, 1)
@@ -158,33 +159,27 @@ def get_number_of_occurrence(pattern, filepath):
 def find_pattern(pattern, filepath, print_result=False):
   text = array("B", "".encode())
   pm_table = build_partial_match_table(pattern)
-  part = 0
 
   pattern = array("B", pattern.encode())
   pattern = np.array(pattern)
 
   number_of_occurrence = 0
 
-  with open(filepath) as f:
+  with open(filepath) as f, open("{}_result_{}.txt".format(filepath, pattern.tostring().decode('utf-8')), "w") as f2:
     for line in f:
       text += array("B", line.encode())
       if(len(text) > MAX_SIZE):
-        # print("Part {}:".format(part))
         result = do_KMP(text, pattern, pm_table)
         number_of_occurrence += result[0]
         if(print_result):
-          print(result[0])
-          print(' '.join(map(str, result[1][0:result[0]])))
+          f2.write(''.join(map(str, result[1][~(result[1] == 35)].tostring().decode('utf-8'))))
         text = array("B", "".encode())
-        part += 1
 
-  if len(text) > 0:
-    # print("Part {}:".format(part))
-    result = do_KMP(text, pattern, pm_table)
-    number_of_occurrence += result[0]
-    if(print_result):
-      print(result[0])
-      print(' '.join(map(str, result[1][0:result[0]])))
+    if len(text) > 0:
+      result = do_KMP(text, pattern, pm_table)
+      number_of_occurrence += result[0]
+      if(print_result):
+        f2.write(''.join(map(str, result[1][~(result[1] == 35)].tostring().decode('utf-8'))))
 
   return number_of_occurrence
 
@@ -198,8 +193,7 @@ def main():
   np.set_printoptions(threshold=np.inf)
   for pattern in build_patterns(args.pattern):
     result = find_pattern(pattern, args.filepath, args.n)
-    if (args.n == False):
-      print(result)
+    print(result)
 
 
 if __name__ == '__main__':
